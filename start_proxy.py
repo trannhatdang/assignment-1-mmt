@@ -90,7 +90,7 @@ def parse_virtual_hosts(config_file):
         #
         if len(proxy_map.get(host,[])) == 1:
             routes[host] = (proxy_map.get(host,[])[0], dist_policy_map)
-        # esle if:
+        # else if:
         #         TODO:  apply further policy matching here
         #
         else:

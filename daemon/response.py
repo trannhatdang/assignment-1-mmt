@@ -195,7 +195,7 @@ class Response():
         """
 
         filepath = os.path.join(base_dir, path.lstrip('/'))
-        content = []
+        content = b""
 
         print("[Response] serving the object at location {}".format(filepath))
             #
