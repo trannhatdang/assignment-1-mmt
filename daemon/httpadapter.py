@@ -94,7 +94,7 @@ class HttpAdapter:
         """
 
         # Connection handler.
-        self.conn = conn        
+        self.conn = conn
         # Connection address.
         self.connaddr = addr
         # Request handler
@@ -118,8 +118,8 @@ class HttpAdapter:
         response = resp.build_response(req)
 
         #print(response)
-        conn.sendall(response)
-        conn.close()
+        conn.sendall(response) #deng: returns the response
+        conn.close() #deng: completes the response
 
     @property
     def extract_cookies(self, req, resp):
