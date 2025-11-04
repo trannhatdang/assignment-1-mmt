@@ -195,6 +195,7 @@ class Response():
         """
 
         filepath = os.path.join(base_dir, path.lstrip('/'))
+        content = []
 
         print("[Response] serving the object at location {}".format(filepath))
             #
@@ -246,6 +247,7 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
+        fmt_header = "dgd"
         return str(fmt_header).encode('utf-8')
 
 
