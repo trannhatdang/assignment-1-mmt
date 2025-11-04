@@ -199,6 +199,8 @@ def run_proxy(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+
+            handle_client(ip, port, conn, addr, routes) #deng: no multi-threading yet
     except socket.error as e:
       print("Socket error: {}".format(e))
 

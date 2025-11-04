@@ -103,7 +103,7 @@ class Request():
         # TODO manage the webapp hook in this mounting point
         #
         
-        if not routes == {}:
+        if(not routes == {}):
             self.routes = routes
             self.hook = routes.get((self.method, self.path))
             #
