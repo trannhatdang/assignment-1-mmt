@@ -45,6 +45,20 @@ def login(headers="guest", body="anonymous"):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body or login payload.
     """
+
+    body_arr = body.split('&')
+    body_dict = {}
+
+    for line in body_arr:
+        split_line = line.split('=')
+        if len(split_line) == 2:
+            key = split_line[0]
+            val = split_line[1]
+            body_dict[key] = val
+
+    if(body_dict.username == "admin" and body_dict.password == "password"):
+        header += "Cookie: set-auth=true\r\n"
+
     print("[SampleApp] Logging in {} to {}".format(headers, body))
 
 @app.route('/hello', methods=['PUT'])

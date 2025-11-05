@@ -202,7 +202,9 @@ class Response():
             #        store in the return value of content
             #
 
-        if('images' in filepath):
+        if(path == '/login'):
+            content = ''.encode('utf-8') #deng: what is the content?
+        elif('images' in filepath):
             file = open(filepath, "rb")
             content = file.read()
         else:
@@ -233,13 +235,14 @@ class Response():
                 "Accept-Language": "{}".format(reqhdr.get("Accept-Language", "en-US,en;q=0.9")),
                 "Authorization": "{}".format(reqhdr.get("Authorization", "Basic <credentials>")),
                 "Cache-Control": "no-cache",
-                "Content-Type": "{}".format(self.headers['Content-Type']),
+                "Content-Type": "{}".format(rsphdr.get('Content-Type', "")),
                 "Content-Length": "{}".format(len(self._content)),
 #                "Cookie": "{}".format(reqhdr.get("Cookie", "sessionid=xyz789")), #dummy cooki
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
+                "Set-Cookie": "{}".format(reqhdr.get("Cookie", "None")),
                 "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
                 "Max-Forward": "10",
                 "Pragma": "no-cache",
@@ -284,7 +287,6 @@ class Response():
                 "404 Not Found"
             ).encode('utf-8')
 
-
     def build_response(self, request):
         """
         Builds a full HTTP response including headers and content based on the request.
@@ -311,12 +313,14 @@ class Response():
         #
         # TODO: add support objects
         #
+        elif path == ('/login'):
+            base_dir = ''
         else:
             return self.build_notfound()
 
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 
-        status = 'HTTP/1.1 200 OK\n'.encode('utf-8')
+        status = 'HTTP/1.1 200 OK\r\n'.encode('utf-8')
 
         return status + self._header + self._content

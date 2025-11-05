@@ -107,9 +107,15 @@ class HttpAdapter:
         req.prepare(msg, routes)
 
         # Handle request hook
+        
+        # deng: If request needs hook, this runs the hook with the corresponding header and body. 
+        # deng: In my case, it calls login(header, body)
+        # deng: This needs handling of return value for hook?
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = "bksysnet", body = "get in touch")
+            req.hook(headers = str(req.headers), body = str(req.body)) #deng: how to put in the headers and the body...
+            req.prepare_headers(str(req.headers))
+            req.prepare_body(str(req.body), None)
             #
             # TODO: handle for App hook here
             #
@@ -218,6 +224,7 @@ class HttpAdapter:
         :rtype: dict
         """
         headers = {}
+        #authentication here????
         #
         # TODO: build your authentication here
         #       username, password =...

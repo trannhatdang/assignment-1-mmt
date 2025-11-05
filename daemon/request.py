@@ -78,7 +78,7 @@ class Request():
             return None, None
 
         return method, path, version
-             
+
     def prepare_headers(self, request):
         """Prepares the given HTTP headers."""
         lines = request.split('\r\n')
@@ -103,6 +103,7 @@ class Request():
         # TODO manage the webapp hook in this mounting point
         #
         
+        #uses the routes dictionary to get the corresponding hook
         if(not routes == {}):
             self.routes = routes
             self.hook = routes.get((self.method, self.path))
@@ -117,24 +118,34 @@ class Request():
             #  TODO: implement the cookie function here
             #        by parsing the header            #
 
+        self.body = self.prepare_body(request, None)
         return
 
     def prepare_body(self, data, files, json=None):
-        self.prepare_content_length(self.body)
-        self.body = body
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        return
+        lines = data.split('\r\n')
+        body = ''
+        for line in lines[-1:]:
+            if line == '':
+                break
+            else:
+                body += line
+
+        self.body = body
+        self.prepare_content_length(body)
+        return body
 
 
     def prepare_content_length(self, body):
-        self.headers["Content-Length"] = "0"
+        self.headers["Content-Length"] = len(body)
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
+    # deng: Don't know what this does
         return
 
 
