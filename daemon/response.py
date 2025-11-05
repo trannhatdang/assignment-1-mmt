@@ -161,8 +161,8 @@ class Response():
             else:
                 handle_text_other(sub_type)
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/images/"
-            self.headers['Content-Type']='image/{}'.format(sub_type)
+            base_dir = BASE_DIR+"static/"
+            self.headers['Content-Type']='images/{}'.format(sub_type)
         elif main_type == 'application':
             base_dir = BASE_DIR+"apps/"
             self.headers['Content-Type']='application/{}'.format(sub_type)
@@ -202,9 +202,16 @@ class Response():
             #        store in the return value of content
             #
 
-        
-        file = open(filepath, "r")
-        content = file.read().encode('utf-8')
+        if('images' in filepath):
+            file = open(filepath, "rb")
+            content = file.read()
+        else:
+            file = open(filepath, "r")
+            content = file.read().encode('utf-8')
+
+        if(content == None):
+            raise Exception("Something went wrong processing the file")
+
         return len(content), content
 
 
@@ -299,8 +306,8 @@ class Response():
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
-        elif mime_type == 'image':
-            base_dir = self.prepare_content_type(mime_type = 'image')
+        elif mime_type == 'image/png':
+            base_dir = self.prepare_content_type(mime_type = 'image/png')
         #
         # TODO: add support objects
         #

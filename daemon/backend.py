@@ -92,7 +92,10 @@ def run_backend(ip, port, routes):
             #        provided handle_client routine
             #
 
-            handle_client(ip, port, conn, addr, routes) #deng: no multi-threading yet
+            #handle_client(ip, port, conn, addr, routes) #deng: no multi-threading yet
+            t = threading.Thread(target=handle_client, args=(ip, port, conn, addr, routes))
+            t.start()
+
     except socket.error as e:
       print("Socket error: {}".format(e))
 
