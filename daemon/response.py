@@ -161,7 +161,7 @@ class Response():
             else:
                 handle_text_other(sub_type)
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
+            base_dir = BASE_DIR+"static/images/"
             self.headers['Content-Type']='image/{}'.format(sub_type)
         elif main_type == 'application':
             base_dir = BASE_DIR+"apps/"
@@ -195,13 +195,16 @@ class Response():
         """
 
         filepath = os.path.join(base_dir, path.lstrip('/'))
-        content = b""
-
         print("[Response] serving the object at location {}".format(filepath))
+
             #
             #  TODO: implement the step of fetch the object file
             #        store in the return value of content
             #
+
+        
+        file = open(filepath, "r")
+        content = file.read().encode('utf-8')
         return len(content), content
 
 
@@ -247,8 +250,13 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        fmt_header = "dgd"
-        return str(fmt_header).encode('utf-8')
+        
+
+        fmt_header = ''
+        for key in headers:
+            fmt_header += (key + ': ' + headers[key] + '\n')
+        fmt_header += '\r\n'
+        return fmt_header.encode('utf-8')
 
 
     def build_notfound(self):
@@ -291,6 +299,8 @@ class Response():
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
+        elif mime_type == 'image':
+            base_dir = self.prepare_content_type(mime_type = 'image')
         #
         # TODO: add support objects
         #
@@ -300,4 +310,6 @@ class Response():
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 
-        return self._header + self._content
+        status = 'HTTP/1.1 200 OK\n'.encode('utf-8')
+
+        return status + self._header + self._content
