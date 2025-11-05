@@ -23,6 +23,7 @@ The current version supports MIME type detection, content loading and header for
 import datetime
 import os
 import mimetypes
+from authentication import Authentication
 from .dictionary import CaseInsensitiveDict
 
 BASE_DIR = ""
@@ -228,6 +229,8 @@ class Response():
         """
         reqhdr = request.headers
         rsphdr = self.headers
+
+        print("request header: " + str(reqhdr))
 
         #Build dynamic headers
         headers = {

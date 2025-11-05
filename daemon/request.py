@@ -107,25 +107,14 @@ class Request():
         if(not routes == {}):
             self.routes = routes
             self.hook = routes.get((self.method, self.path))
-            #
-            # self.hook manipulation goes here
-            # ...
-            #
 
         self.headers = self.prepare_headers(request)
         cookies = self.headers.get('cookie', '')
-            #
-            #  TODO: implement the cookie function here
-            #        by parsing the header            #
-
         self.body = self.prepare_body(request, None)
+        self.auth = self.prepare_auth(request)
         return
 
     def prepare_body(self, data, files, json=None):
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
         lines = data.split('\r\n')
         body = ''
         for line in lines[-1:]:
@@ -141,20 +130,11 @@ class Request():
 
     def prepare_content_length(self, body):
         self.headers["Content-Length"] = len(body)
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
-    # deng: Don't know what this does
         return
 
 
     def prepare_auth(self, auth, url=""):
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
         return
 
     def prepare_cookies(self, cookies):
-            self.headers["Cookie"] = cookies
+        self.headers["Cookie"] = cookies
