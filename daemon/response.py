@@ -74,6 +74,7 @@ class Response():
         "request",
         "body",
         "reason",
+        "auth",
     ]
 
 
@@ -118,6 +119,8 @@ class Response():
         #: The :class:`PreparedRequest <PreparedRequest>` object to which this
         #: is a response.
         self.request = None
+
+        self.auth=""
 
 
     def get_mime_type(self, path):
@@ -204,7 +207,10 @@ class Response():
             #
 
         if(path == '/login'):
+            authe = Authentication()
             content = ''.encode('utf-8')
+            self.auth = "auth=true" if authe.authenticate(self.request.body) else "auth=false"
+            print("auth res: "+ self.auth)
         elif('images' in filepath):
             file = open(filepath, "rb")
             content = file.read()
@@ -230,8 +236,6 @@ class Response():
         reqhdr = request.headers
         rsphdr = self.headers
 
-        print("request header: " + str(reqhdr))
-
         #Build dynamic headers
         headers = {
                 "Accept": "{}".format(reqhdr.get("Accept", "application/json")),
@@ -245,7 +249,7 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-                "Set-Cookie": "{}".format(reqhdr.get("Cookie", "None")),
+                "Set-Cookie": "{}".format(self.auth),
                 "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
                 "Max-Forward": "10",
                 "Pragma": "no-cache",
@@ -290,6 +294,18 @@ class Response():
                 "404 Not Found"
             ).encode('utf-8')
 
+
+    def build_unauthorized(self):
+        return (
+                "HTTP/1.1 401 Unauthorized\r\n"
+                "Accept-Ranges: bytes\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 16\r\n"
+                "Cache-Control: max-age=86000\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "401 Unauthorized"
+            ).encode('utf-8')
     def build_response(self, request):
         """
         Builds a full HTTP response including headers and content based on the request.
@@ -299,10 +315,16 @@ class Response():
         :rtype bytes: complete HTTP response using prepared headers and content.
         """
 
+        self.request = request
         path = request.path
 
         mime_type = self.get_mime_type(path)
         print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
+
+        if path == '/login':
+            pass
+        elif not request.auth:
+            return self.build_unauthorized()
 
         base_dir = ""
 
@@ -316,7 +338,7 @@ class Response():
         #
         # TODO: add support objects
         #
-        elif path == ('/login'):
+        elif path == '/login':
             base_dir = ''
         else:
             return self.build_notfound()

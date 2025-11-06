@@ -110,7 +110,7 @@ class HttpAdapter:
         
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = str(req.headers), body = str(req.body)) #deng: If done this way, the parameters won't be modified, too bad!
+            req.hook(headers = '', body = '')
             #
             # TODO: handle for App hook here
             #

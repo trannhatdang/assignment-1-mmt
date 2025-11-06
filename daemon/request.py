@@ -111,7 +111,7 @@ class Request():
 
         self.headers = self.prepare_headers(request)
         self.body = self.prepare_body(request, None)
-        self.headers["cookie"] = "auth=true" if (self.prepare_auth(self.body)) else "auth=false"
+        self.auth = self.prepare_auth(request)
         return
 
     def prepare_body(self, data, files, json=None):
@@ -132,8 +132,7 @@ class Request():
 
 
     def prepare_auth(self, auth, url=""):
-        authe = Authentication()
-        return authe.authenticate(auth)
+        return ("auth=true" in self.headers.get("cookie", ""))
 
     def prepare_cookie(self, cookie):
         self.headers["cookie"] = cookie
