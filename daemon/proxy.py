@@ -24,7 +24,7 @@ Requirement:
 - threading: enables concurrent client handling via threads.
 - response: customized :class: `Response <Response>` utilities.
 - httpadapter: :class: `HttpAdapter <HttpAdapter >` adapter for HTTP request processing.
-- dictionary: :class: `CaseInsensitiveDict <CaseInsensitiveDict>` for managing headers and cookies.
+- dictionary: :class: `CaseInsensitiveDict <CaseInsensitiveDict>` for managing headers and cookie.
 
 """
 import socket
@@ -200,7 +200,6 @@ def run_proxy(ip, port, routes):
             #        provided handle_client routine
             #
 
-            print("proxying: " + str(addr))
             t = threading.Thread(target=handle_client, args=(ip, port, conn, addr, routes))
             t.start()
     except socket.error as e:

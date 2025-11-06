@@ -15,8 +15,9 @@ daemon.request
 ~~~~~~~~~~~~~~~~~
 
 This module provides a Request object to manage and persist 
-request settings (cookies, auth, proxies).
+request settings (cookie, auth, proxies).
 """
+from .authentication import Authentication
 from .dictionary import CaseInsensitiveDict
 
 class Request():
@@ -42,7 +43,7 @@ class Request():
         "headers",
         "body",
         "reason",
-        "cookies",
+        "cookie",
         "body",
         "routes",
         "hook",
@@ -57,8 +58,8 @@ class Request():
         self.headers = None
         #: HTTP path
         self.path = None        
-        # The cookies set used to create Cookie header
-        self.cookies = None
+        # The cookie set used to create Cookie header
+        self.cookie = None
         #: request body to send to the server.
         self.body = None
         #: Routes
@@ -109,9 +110,8 @@ class Request():
             self.hook = routes.get((self.method, self.path))
 
         self.headers = self.prepare_headers(request)
-        cookies = self.headers.get('cookie', '')
         self.body = self.prepare_body(request, None)
-        self.auth = self.prepare_auth(request)
+        self.headers["cookie"] = "auth=true" if (self.prepare_auth(self.body)) else "auth=false"
         return
 
     def prepare_body(self, data, files, json=None):
@@ -123,10 +123,8 @@ class Request():
             else:
                 body += line
 
-        self.body = body
         self.prepare_content_length(body)
         return body
-
 
     def prepare_content_length(self, body):
         self.headers["Content-Length"] = len(body)
@@ -134,7 +132,8 @@ class Request():
 
 
     def prepare_auth(self, auth, url=""):
-        return
+        authe = Authentication()
+        return authe.authenticate(auth)
 
-    def prepare_cookies(self, cookies):
-        self.headers["Cookie"] = cookies
+    def prepare_cookie(self, cookie):
+        self.headers["cookie"] = cookie

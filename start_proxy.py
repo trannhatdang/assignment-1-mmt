@@ -79,8 +79,7 @@ def parse_virtual_hosts(config_file):
             dist_policy_map = policy_match.group(1)
         else: #default policy is round_robin
             dist_policy_map = 'round-robin'
-            
-        #
+
         # @bksysnet: Build the mapping and policy
         # TODO: this policy varies among scenarios 
         #       the default policy is provided with one proxy_pass
@@ -94,7 +93,7 @@ def parse_virtual_hosts(config_file):
         #         TODO:  apply further policy matching here
         #
         else:
-            routes[host] = (proxy_map.get(host,[]), dist_policy_map)
+            routes[host] = (proxy_map.get(host,[]), dist_policy_map) #gets all the routes
 
     for key, value in routes.items():
         print(key, value)

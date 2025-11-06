@@ -15,7 +15,7 @@ daemon.response
 ~~~~~~~~~~~~~~~~~
 
 This module provides a :class: `Response <Response>` object to manage and persist 
-response settings (cookies, auth, proxies), and to construct HTTP responses
+response settings (cookie, auth, proxies), and to construct HTTP responses
 based on incoming requests. 
 
 The current version supports MIME type detection, content loading and header formatting
@@ -23,7 +23,7 @@ The current version supports MIME type detection, content loading and header for
 import datetime
 import os
 import mimetypes
-from authentication import Authentication
+from .authentication import Authentication
 from .dictionary import CaseInsensitiveDict
 
 BASE_DIR = ""
@@ -37,7 +37,7 @@ class Response():
     effects.
 
     :class:`Response <Response>` object encapsulates headers, content, 
-    status code, cookies, and metadata related to the request-response cycle.
+    status code, cookie, and metadata related to the request-response cycle.
     It is used to construct and serve HTTP responses in a custom web server.
 
     :attrs status_code (int): HTTP status code (e.g., 200, 404).
@@ -46,7 +46,7 @@ class Response():
     :attrsencoding (str): encoding used for decoding response content.
     :attrs history (list): list of previous Response objects (for redirects).
     :attrs reason (str): textual reason for the status code (e.g., "OK", "Not Found").
-    :attrs cookies (CaseInsensitiveDict): response cookies.
+    :attrs cookie (CaseInsensitiveDict): response cookie.
     :attrs elapsed (datetime.timedelta): time taken to complete the request.
     :attrs request (PreparedRequest): the original request object.
 
@@ -69,7 +69,7 @@ class Response():
         "history",
         "encoding",
         "reason",
-        "cookies",
+        "cookie",
         "elapsed",
         "request",
         "body",
@@ -109,8 +109,8 @@ class Response():
         #: Textual reason of responded HTTP Status, e.g. "Not Found" or "OK".
         self.reason = None
 
-        #: A of Cookies the response headers.
-        self.cookies = CaseInsensitiveDict()
+        #: A of cookie the response headers.
+        self.cookie = CaseInsensitiveDict()
 
         #: The amount of time elapsed between sending the request
         self.elapsed = datetime.timedelta(0)
@@ -147,7 +147,7 @@ class Response():
 
         :raises ValueError: If the MIME type is unsupported.
         """
-        
+
         base_dir = ""
 
         # Processing mime_type based on main_type and sub_type
@@ -204,7 +204,7 @@ class Response():
             #
 
         if(path == '/login'):
-            content = ''.encode('utf-8') #deng: what is the content?
+            content = ''.encode('utf-8')
         elif('images' in filepath):
             file = open(filepath, "rb")
             content = file.read()
@@ -240,7 +240,7 @@ class Response():
                 "Cache-Control": "no-cache",
                 "Content-Type": "{}".format(rsphdr.get('Content-Type', "")),
                 "Content-Length": "{}".format(len(self._content)),
-#                "Cookie": "{}".format(reqhdr.get("Cookie", "sessionid=xyz789")), #dummy cooki
+                #"Cookie": "{}".format(reqhdr.get("Cookie", "sessionid=xyz789")), #dummy cooki
         #
         # TODO prepare the request authentication
         #

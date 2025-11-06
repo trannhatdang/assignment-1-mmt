@@ -123,22 +123,22 @@ class HttpAdapter:
         conn.close() #deng: completes the response
 
     @property
-    def extract_cookies(self, req, resp):
+    def extract_cookie(self, req, resp):
         """
-        Build cookies from the :class:`Request <Request>` headers.
+        Build cookie from the :class:`Request <Request>` headers.
 
         :param req:(Request) The :class:`Request <Request>` object.
         :param resp: (Response) The res:class:`Response <Response>` object.
-        :rtype: cookies - A dictionary of cookie key-value pairs.
+        :rtype: cookie - A dictionary of cookie key-value pairs.
         """
-        cookies = {}
+        cookie = {}
         for header in headers:
             if header.startswith("Cookie:"):
                 cookie_str = header.split(":", 1)[1].strip()
                 for pair in cookie_str.split(";"):
                     key, value = pair.strip().split("=")
-                    cookies[key] = value
-        return cookies
+                    cookie[key] = value
+        return cookie
 
     def build_response(self, req, resp):
         """Builds a :class:`Response <Response>` object 
@@ -159,8 +159,8 @@ class HttpAdapter:
         else:
             response.url = req.url
 
-        # Add new cookies from the server.
-        response.cookies = extract_cookies(req)
+        # Add new cookie from the server.
+        response.cookie = extract_cookie(req)
 
         # Give the Response some context.
         response.request = req
