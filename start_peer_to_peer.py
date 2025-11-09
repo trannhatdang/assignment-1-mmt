@@ -4,6 +4,7 @@ import time
 import json
 from enum import Enum
 from typing import Dict, Tuple, Any
+from daemon import WeApRous
 
 INTRODUCE = "0"
 CHAT = "1"
@@ -189,6 +190,13 @@ class Peer:
             print(i)
         print(f"-----------------------------------")    
 
+
+
+
+app = WeApRous()
+
+
+
 if __name__ == "__main__":
     p1 = Peer("John", ('localhost', 5000))
     p2 = Peer("Bob", ('localhost', 5001))
@@ -231,8 +239,3 @@ if __name__ == "__main__":
     p2.close()
     p3.close()
     p4.close()
-
-    # for p in [p1, p2, p3, p4]:
-    #     p.close()
-
-    # exit()
