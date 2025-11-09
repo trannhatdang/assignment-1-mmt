@@ -316,8 +316,37 @@ class Response():
         """
 
         self.request = request
-        path = request.path
 
+        # If a route handler (WeApRous hook) produced a result, return it directly
+        hook_res = getattr(request, 'hook_result', None)
+        if hook_res is not None:
+            import json as _json
+
+            # Accept either (body, status) or body only
+            if isinstance(hook_res, tuple):
+                body = hook_res[0]
+                status = hook_res[1] if len(hook_res) > 1 else '200 OK'
+            else:
+                body = hook_res
+                status = '200 OK'
+
+            if isinstance(body, (dict, list)):
+                body_bytes = _json.dumps(body).encode('utf-8')
+                content_type = 'application/json'
+            else:
+                body_bytes = str(body).encode('utf-8')
+                content_type = 'text/plain'
+
+            header = (
+                f"HTTP/1.1 {status}\r\n"
+                f"Content-Type: {content_type}\r\n"
+                f"Content-Length: {len(body_bytes)}\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+            ).encode('utf-8')
+            return header + body_bytes
+
+        path = request.path
         mime_type = self.get_mime_type(path)
         print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
 

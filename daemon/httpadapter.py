@@ -106,16 +106,22 @@ class HttpAdapter:
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
 
-        # Handle request hook
-        
+        # Handle request hook (call route handler and capture result)
         if req.hook:
-            print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = '', body = '')
-            #
-            # TODO: handle for App hook here
-            #
+            try:
+                print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
+            except Exception:
+                pass
+            try:
+                # provide real headers and body to the route handler
+                result = req.hook(headers=req.headers, body=req.body)
+                # store result on request for the Response builder to use
+                req.hook_result = result
+            except Exception as e:
+                print(f"[HttpAdapter] hook error: {e}")
+                req.hook_result = None
 
-        # Build response
+        # Build response (may use hook_result if present)
         response = resp.build_response(req)
 
         #print(response)
