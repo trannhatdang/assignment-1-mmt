@@ -31,6 +31,7 @@ import argparse
 from daemon.weaprous import WeApRous
 
 PORT = 8000  # Default port
+app = WeApRous()
 
 @app.route('/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
