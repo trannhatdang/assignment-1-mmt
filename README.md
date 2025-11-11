@@ -14,7 +14,7 @@ Open each client's `chat.html` on each browser window. Example:
 http://0.0.0.0:9000/chat.html
 ```
 
-To send Direct messages. Copy the IP AND PORT into the left field
+To send Direct messages, copy the IP AND PORT into the left field
 and enter the message you want to send. MAKE SURE THE OTHER CLIENT
 IS OPENED AS WELL.
 
