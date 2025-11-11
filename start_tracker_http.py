@@ -9,12 +9,20 @@ Run with: python start_tracker_http.py --host 0.0.0.0 --port 8000
 """
 import argparse
 import json
+import time
 from daemon.weaprous import WeApRous
+from fast_request import send_http_request
+from typing import Dict, Tuple, List
 
 app = WeApRous()
 
 # Keep peers in a dict to avoid duplicates. Key = ip:port
 active_peers = {}
+
+class Channel:
+    def __init__(self, name: str):
+        self.name = name
+        self.messages: List[Tuple[str, str]] = [] # list of tuple: <ip:port> and <message>
 
 @app.route('/register', methods=['POST'])
 def register_peer(headers, body):
@@ -54,9 +62,9 @@ def main():
     args = parser.parse_args()
 
     print(f"Starting Tracker Server at {args.host}:{args.port}...")
+
     app.prepare_address(args.host, args.port)
     app.run()
-
 
 if __name__ == '__main__':
     main()

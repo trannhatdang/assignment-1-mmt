@@ -31,6 +31,7 @@ from typing import Dict, Tuple, Optional, Any, List
 from datetime import datetime
 
 from daemon.weaprous import WeApRous
+from fast_request import send_http_request
 
 PORT = 8000  # Default port
 app: WeApRous = WeApRous()
@@ -41,8 +42,7 @@ tracker = ('0.0.0.0', 9998)
 
 Address = tuple[str, int]
 
-PEERS: Dict[Address, str] = {} # Known peers
-
+PEERS_CONNECTED: List[Address] = [] # Connected peers
 
 """
 inbox contains messages: address, message
@@ -61,40 +61,6 @@ def parse_address(string: str) -> Address:
 def stringify_address(a: Address) -> str:
     return a[0] + ':' + str(a[1])
 
-def send_http_request(addr: Address, method, path, data: Dict[str, str]) -> Dict[str, Any]:
-    BUFSIZE = 4096
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(5)
-    s.connect(addr)
-
-    body = json.dumps(data) if data else ""
-    request = "{} {} HTTP/1.1\r\n".format(method, path)
-    request += f"Host: {addr[0]}:{addr[1]}\r\n"
-    request += "Content-Type: application/json\r\n"
-    request += f"Content-Length: {len(body)}\r\n"
-    request += f"\r\n{body}"
-
-    s.sendall(request.encode())
-    
-    res = bytes()
-    while True:
-        frag = s.recv(BUFSIZE)
-        res += frag
-
-        if len(frag) < BUFSIZE:
-            break
-
-    s.close()
-    del s
-
-    parts = res.decode('utf-8').split('\r\n\r\n', 2)
-    if len(parts) < 2:
-        return {}
-
-    # print(f"[SEND HTTP] Received {parts[1]}")
-
-    return json.loads(parts[1])
 
 class Message:
     def __init__(self, sender: Address, receiver: Address, message: str, timecode: datetime = datetime.now()):
@@ -129,11 +95,17 @@ class Message:
 
 @app.route('/login', methods=['POST'])
 def login(headers="admin", body="password"):
-    pass
+    return ({"status": "success", "message": "Alive"}, '200 OK')
 
 @app.route('/list', methods=['GET'])
 def listpeers(headers, body):
     res = send_http_request(tracker, "GET", "/peers", {})
+
+    global PEERS_CONNECTED
+
+    for p in res:
+        p['connected'] = parse_address(p['id']) in PEERS_CONNECTED
+
     return res
 
 @app.route('/inbox', methods=['POST'])
@@ -143,6 +115,7 @@ def peerinbox(headers, body):
         sender = data['sender']
         message = data['message']
 
+        global INBOX_QUEUE
         INBOX_QUEUE.append((sender, message))
     
         return ({"status": "success", "message": "Message received"}, '200 OK')
@@ -153,9 +126,13 @@ def peerinbox(headers, body):
 @app.route('/pollinbox', methods=['GET'])
 def peerpoll(headers, body):
     try:
+        global INBOX_QUEUE
+
         newmsg = INBOX_QUEUE
         msgstr = json.dumps(newmsg)
+
         INBOX_QUEUE.clear()
+
         return ({"status": "success", "message": msgstr}, '200 OK')
     
     except json.JSONDecodeError as e:
@@ -171,8 +148,10 @@ def peersenddm(headers, body):
         sender = stringify_address((ip, port))
         receiver = data['receiver']
         message = data['message']
+
+        recvaddr = parse_address(receiver)
         
-        send_http_request(parse_address(receiver), 'POST', '/inbox', {
+        send_http_request(recvaddr, 'POST', '/inbox', {
             'sender': sender,
             'reveiver': receiver,
             'message': message,
@@ -184,9 +163,69 @@ def peersenddm(headers, body):
     except Exception as e:
         return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 
+@app.route('/acceptpeer', methods=['POST'])
+def acceptpeer(headers, body):
+    try:
+        global PEERS_CONNECTED
+
+        data = json.loads(body)
+    
+        addr = parse_address(data)
+
+        PEERS_CONNECTED.append(addr)
+
+        print(f"Accepted connection from {addr}")
+        
+        return ({"status": "success", "message": f"Connection accepted."}, '200 OK')
+    
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": f"{e}"}, '400 Bad Request')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
+@app.route('/connectpeer', methods=['POST'])
+def connectpeer(headers, body):
+    try:
+        data = json.loads(body)
+        toaddr = parse_address(data)
+        
+        res = send_http_request(toaddr, 'POST', '/acceptpeer', stringify_address((ip, port)))
+
+        print(res)
+
+        if res['status'] != 'success':
+            return ({"status": "error", "message": "Peer conection failed"}, '400 Bad Request')
+
+        PEERS_CONNECTED.append(toaddr)
+
+        return ({"status": "success", "message": f"Peer connected successfully"}, '200 OK')
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": f"{e}"}, '400 Bad Request')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
 @app.route('/get', methods=['GET'])
 def get(headers, body):
     return ({"status": "success", "message": {'ip': ip, 'port': port, 'username': username}}, '200 OK')
+
+@app.route('/broadcast', methods=['POST'])
+def broadcast(headers, body):
+    try:
+        data = json.loads(body)
+        sender = stringify_address((ip, port))
+        message = data['message']
+
+        for recvaddr in PEERS_CONNECTED:
+            send_http_request(recvaddr, 'POST', '/inbox', {
+                'sender': sender,
+                'message': message,
+            })
+
+        return ({"status": "success", "message": f"Message send successfully"}, '200 OK')
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": f"{e}"}, '400 Bad Request')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port

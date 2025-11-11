@@ -35,7 +35,7 @@
 
 <div>
     <h3>Online peers</h3>
-    <div id="peerslist">
+    <div id="peerslist" class="peerlist">
 
     </div>
 </div>
@@ -49,7 +49,7 @@
 
 <div>
     <h3>Direct Messages</h3>
-    <div id="direct messages" class="message-window">
+    <div id="direct messages">
 
     </div>
 </div>
@@ -61,6 +61,16 @@
             <input name="peer address" type="text">
             <input name="message" type="text">
             <button type="button" onclick="sendToPeer()">Send Data</button>
+        </form>
+    </div>
+</div>
+
+<div>
+    <h3>Broadcast message</h3>
+    <div>
+        <form id="broadcast" method="POST" action="/send">
+            <input name="message" type="text">
+            <button type="button" onclick="broadcast()">Send Data</button>
         </form>
     </div>
 </div>
@@ -111,12 +121,37 @@
         peerlist.innerHTML = "";
         PEERLIST.forEach(p => {
             let content = p['username'] + ' (' + p['id'] + ')';
+            let connected = p['connected'];
 
             if (p['id'] == CLIENT) {
                 content += ' (You)';
             }
 
-            peerlist.innerHTML += '<p>' + content + '</p>'; 
+            if (connected) {
+                content += ' (Connected)';
+            }
+
+            let container = document.createElement('div');
+            
+            let peernode = document.createElement('p');
+            peernode.textContent = content;
+
+            container.appendChild(peernode);
+         
+            if (!connected && p['id'] != CLIENT) {
+                let button = document.createElement('button')
+                button.textContent = "Connect"
+                button.type = "Button";
+                button.addEventListener("click", () => {
+                    console.log("Connecting to", p['id'], '...')
+                    sendRequest('/connectpeer', 'POST', p['id'])
+                    pollPeers()
+                });
+                container.appendChild(button);
+            }
+
+            peerlist.appendChild(container);
+
         });
     }
 
@@ -131,22 +166,33 @@
             return;
         }
 
-        for (let key in PEERLIST) {
-            let peer = PEERLIST[key];
-            
-            if (peer['id'] == addr) {
-                await sendRequest('/send', 'POST', {
-                    'receiver': addr,
-                    'message': msg
-                }).then((v) => {
-                    displayMessage("[You]", msg);
-                });
+        await sendRequest('/send', 'POST', {
+            'receiver': addr,
+            'message': msg
+        }).then((v) => {
+            displayMessage("[You]", msg);
+        }).catch((x) => 
+            console.log("Failed to send message to peer")
+        )
+    }
 
-                return;
-            }
+    async function broadcast() {
+        let form = document.getElementById('broadcast')
+        let data = new FormData(form);
+        let msg = data.get('message')
+
+        if (msg.length == 0) {
+            console.log("Message must not be empty.");
+            return;
         }
 
-        console.log("Invalid address or peer not found")
+        await sendRequest('/broadcast', 'POST', {
+            'message': msg
+        }).then((v) => {
+            displayMessage("[You]", msg);
+        }).catch((x) => 
+            console.log("Failed to send message to peer")
+        )
     }
 
     async function startPolling(func, time, startnow = true) {
