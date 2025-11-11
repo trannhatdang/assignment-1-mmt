@@ -111,7 +111,7 @@ class Response():
         self.reason = None
 
         #: A of cookie the response headers.
-        self.cookie = CaseInsensitiveDict()
+        self.cookie = {}
 
         #: The amount of time elapsed between sending the request
         self.elapsed = datetime.timedelta(0)
@@ -155,7 +155,7 @@ class Response():
 
         # Processing mime_type based on main_type and sub_type
         main_type, sub_type = mime_type.split('/', 1)
-        print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
+        # print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
         if main_type == 'text':
             self.headers['Content-Type']='text/{}'.format(sub_type)
             if sub_type == 'plain' or sub_type == 'css':
@@ -163,9 +163,10 @@ class Response():
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
             else:
-                handle_text_other(sub_type)
+                # handle_text_other(sub_type) # This function is not defined, raise error
+                raise ValueError(f"Unsupported text subtype: {sub_type}")
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
+            base_dir = BASE_DIR+"static/" # Images are in static/ [cite: 213]
             self.headers['Content-Type']='images/{}'.format(sub_type)
         elif main_type == 'application':
             base_dir = BASE_DIR+"apps/"
@@ -199,24 +200,32 @@ class Response():
         """
 
         filepath = os.path.join(base_dir, path.lstrip('/'))
-        print("[Response] serving the object at location {}".format(filepath))
+        # print("[Response] serving the object at location {}".format(filepath))
 
-            #
-            #  TODO: implement the step of fetch the object file
-            #        store in the return value of content
-            #
+        #
+        #  TODO: implement the step of fetch the object file
+        #        store in the return value of content
+        #
 
-        if(path == '/login'):
-            authe = Authentication()
-            content = ''.encode('utf-8')
-            self.auth = "auth=true" if authe.authenticate(self.request.body) else "auth=false"
-            print("auth res: "+ self.auth)
-        elif('images' in filepath):
-            file = open(filepath, "rb")
-            content = file.read()
-        else:
-            file = open(filepath, "r")
-            content = file.read().encode('utf-8')
+        # --- MODIFICATION ---
+        # Authentication logic removed from here and moved to build_response.
+        # This function now only loads the file content based on path.
+        # --- END MODIFICATION ---
+
+        try:
+            if 'images' in filepath or path.endswith('.png') or path.endswith('.jpg'):
+                file = open(filepath, "rb")
+                content = file.read()
+            else:
+                # This will correctly open and read login.html, index.html, styles.css, etc.
+                file = open(filepath, "r")
+                content = file.read().encode('utf-8')
+        except FileNotFoundError:
+            print(f"[Response] File not found: {filepath}")
+            raise Exception("File not found")
+        except Exception as e:
+            print(f"[Response] Error processing file: {e}")
+            raise Exception("Something went wrong processing the file")
 
         if(content == None):
             raise Exception("Something went wrong processing the file")
@@ -236,6 +245,8 @@ class Response():
         reqhdr = request.headers
         rsphdr = self.headers
 
+        # print("COOKIES!!!! {}", "; ".join([str(x)+"="+str(y) for x,y in self.cookie.items()]))
+
         #Build dynamic headers
         headers = {
                 "Accept": "{}".format(reqhdr.get("Accept", "application/json")),
@@ -248,8 +259,8 @@ class Response():
         #
         # TODO prepare the request authentication
         #
-	# self.auth = ...
-                "Set-Cookie": "{}".format(self.auth),
+	    # self.auth = ...
+                "Set-Cookie": "; ".join([str(x)+"="+str(y) for x,y in self.cookie.items()]), # 
                 "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
                 "Max-Forward": "10",
                 "Pragma": "no-cache",
@@ -271,6 +282,9 @@ class Response():
 
         fmt_header = ''
         for key in headers:
+            # Don't send empty Set-Cookie header
+            if key == "Set-Cookie" and not headers[key]:
+                continue
             fmt_header += (key + ': ' + headers[key] + '\n')
         fmt_header += '\r\n'
         return fmt_header.encode('utf-8')
@@ -296,6 +310,7 @@ class Response():
 
 
     def build_unauthorized(self):
+        # [cite: 352, 356]
         return (
                 "HTTP/1.1 401 Unauthorized\r\n"
                 "Accept-Ranges: bytes\r\n"
@@ -306,6 +321,10 @@ class Response():
                 "\r\n"
                 "401 Unauthorized"
             ).encode('utf-8')
+        
+    def return_peers(self):
+        return "".encode('utf-8')
+
     def build_response(self, request):
         """
         Builds a full HTTP response including headers and content based on the request.
@@ -348,33 +367,84 @@ class Response():
 
         path = request.path
         mime_type = self.get_mime_type(path)
-        print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
+        # print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
 
-        if path == '/login':
-            pass
-        elif not request.auth:
-            return self.build_unauthorized()
+        # --- START MODIFICATION (Task 1A) ---
+        # Handle POST /login for authentication 
+        if path == '/login' and request.method == 'POST':
+            authe = Authentication()
+            # Check credentials (e.g., admin/password) [cite: 350]
+            if authe.authenticate(self.request.body):
+                # Task 1A: Valid credentials
+                print("[Response] Authentication successful for /login")
+                # Set cookie for header 
+                self.cookie["auth"] = 'true'
+                
+                # Task 1A: Respond with index page 
+                path = '/index.html' # Serve index.html
+                mime_type = 'text/html'
+                
+                try:
+                    base_dir = self.prepare_content_type(mime_type)
+                    c_len, self._content = self.build_content(path, base_dir)
+                    self._header = self.build_response_header(request)
+                    status = 'HTTP/1.1 200 OK\r\n'.encode('utf-8')
+                    return status + self._header + self._content
+                except Exception:
+                    return self.build_notfound() # If index.html is missing
+
+            else:
+                # Task 1A: Invalid credentials, respond with 401 
+                print("[Response] Authentication failed for /login")
+                return self.build_unauthorized()
+
+        # --- END MODIFICATION ---
+
+        # --- START MODIFICATION (Task 1B) ---
+        
+        # Handle GET /login (request for the login form itself)
+        if path == '/login' and request.method == 'GET':
+            path = '/login.html' # Serve login.html from www/
+            mime_type = self.get_mime_type(path)
+        
+        # # Task 1B: Implement cookie-based access control 
+        # # Protect all other paths
+        # elif not request.auth:
+        #     # If cookie is missing or incorrect, respond with 401 [cite: 355, 356]
+        #     return self.build_unauthorized()
+            
+        # --- END MODIFICATION ---
 
         base_dir = ""
 
-        #If HTML, parse and serve embedded objects
-        if path.endswith('.html') or mime_type == 'text/html':
-            base_dir = self.prepare_content_type(mime_type = 'text/html')
-        elif mime_type == 'text/css':
-            base_dir = self.prepare_content_type(mime_type = 'text/css')
-        elif mime_type == 'image/png':
-            base_dir = self.prepare_content_type(mime_type = 'image/png')
-        #
-        # TODO: add support objects
-        #
-        elif path == '/login':
-            base_dir = ''
-        else:
+        # Try to prepare content type and get base directory
+        try:
+            if path.endswith('.html') or mime_type == 'text/html':
+                base_dir = self.prepare_content_type(mime_type = 'text/html')
+            elif mime_type == 'text/css':
+                base_dir = self.prepare_content_type(mime_type = 'text/css')
+            elif mime_type == 'image/png':
+                base_dir = self.prepare_content_type(mime_type = 'image/png')
+            elif mime_type == 'image/jpeg':
+                # Added jpg support for welcome.jpg
+                base_dir = self.prepare_content_type(mime_type = 'image/jpeg')
+            else:
+                # Default attempt for other types
+                base_dir = self.prepare_content_type(mime_type)
+        except ValueError: # Catches unsupported MIME types
+            print(f"Unsupported MIME type: {mime_type}")
+            return self.build_notfound()
+        except Exception as e: # Catch other potential errors
+            print(f"Error preparing content type: {e}")
             return self.build_notfound()
 
-        c_len, self._content = self.build_content(path, base_dir)
-        self._header = self.build_response_header(request)
+        # Try to build the content
+        try:
+            c_len, self._content = self.build_content(path, base_dir)
+        except Exception: # Catch file not found, etc.
+            return self.build_notfound()
 
+        self._header = self.build_response_header(request)
         status = 'HTTP/1.1 200 OK\r\n'.encode('utf-8')
 
         return status + self._header + self._content

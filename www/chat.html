@@ -1,0 +1,200 @@
+<!-- <!doctype html>
+<html>
+<head>
+    <title>bksysnet@hcmut welcome</title>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+<div>
+    <form action="/submit-data" method="post">
+        <button type="submit">Start chatting</button>
+    </form>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+
+<html><body>
+
+<style>
+    .message-window {
+        width: 100%;
+        max-height: 20rem;
+        overflow: scroll;
+    }
+</style>
+
+<div>
+    <h3 id="greet"></h3>
+</div>
+
+<div>
+    <h3>Online peers</h3>
+    <div id="peerslist">
+
+    </div>
+</div>
+
+<div>
+    <h3>Channels</h3>
+    <div id="channels"">
+
+    </div>
+</div>
+
+<div>
+    <h3>Direct Messages</h3>
+    <div id="direct messages" class="message-window">
+
+    </div>
+</div>
+
+<div>
+    <h3>Send Direct message</h3>
+    <div>
+        <form id="sendToPeer" method="POST" action="/send">
+            <input name="peer address" type="text">
+            <input name="message" type="text">
+            <button type="button" onclick="sendToPeer()">Send Data</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    let CLIENT = "0.0.0.0:9000";
+    let PEERLIST = [];
+    const TRACKER = 'http://0.0.0.0:9998';
+
+    function displayMessage(username, msg) {
+        let displaylist = document.getElementById('direct messages');
+        let paragraph = document.createElement('p');
+        paragraph.textContent = username + ": " + msg;
+        displaylist.appendChild(paragraph);
+    }
+
+    async function sendRequest(url, method = 'GET', data = null) {
+        try {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (data) {
+                str = JSON.stringify(data);
+                options.body = str;
+            }
+
+            const response = await fetch(url, options);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`); 
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            console.error('API Error:', error);
+            return null;
+        }
+    }
+
+    async function pollPeers() {
+        PEERLIST = await sendRequest('/list', "GET");
+        let peerlist = document.getElementById('peerslist');
+        peerlist.innerHTML = "";
+        PEERLIST.forEach(p => {
+            let content = p['username'] + ' (' + p['id'] + ')';
+
+            if (p['id'] == CLIENT) {
+                content += ' (You)';
+            }
+
+            peerlist.innerHTML += '<p>' + content + '</p>'; 
+        });
+    }
+
+    async function sendToPeer() {
+        let form = document.getElementById('sendToPeer')
+        let data = new FormData(form);
+        let addr = data.get('peer address')
+        let msg = data.get('message')
+
+        if (msg.length == 0) {
+            console.log("Message must not be empty.");
+            return;
+        }
+
+        for (let key in PEERLIST) {
+            let peer = PEERLIST[key];
+            
+            if (peer['id'] == addr) {
+                await sendRequest('/send', 'POST', {
+                    'receiver': addr,
+                    'message': msg
+                }).then((v) => {
+                    displayMessage("[You]", msg);
+                });
+
+                return;
+            }
+        }
+
+        console.log("Invalid address or peer not found")
+    }
+
+    async function startPolling(func, time, startnow = true) {
+        if (startnow) {
+            func();
+        }
+    
+        setInterval(() => func(), time);
+    }
+
+    async function pollMessages() {
+        await sendRequest('/pollinbox', 'GET')
+            .then((v) => {
+                let data = v['message'];
+                
+                if (data == '[]') {
+                    return
+                }
+                
+                let list = JSON.parse(data);
+
+                list.forEach((msgpair) => {
+                    let peername = 'Guest';
+                    PEERLIST.forEach((v) => {
+                        if (v['id'] == msgpair[0]) peername = v['username']
+                    });
+
+                    displayMessage(peername, msgpair[1])
+                });
+            });
+    }
+
+    async function main() {
+        // Receive own username
+        await sendRequest('/get', 'GET')
+            .then((v) => {
+                let selfname = v['message']['username']
+                CLIENT = v['message']['ip'] + ':' + v['message']['port'];
+                document.getElementById('greet').textContent = "Hello " + selfname;
+            });
+
+        console.log(CLIENT)
+
+        startPolling(pollPeers, 5000, true);
+        startPolling(pollMessages, 1000);
+    }
+
+    main()
+</script>
+
+</body></html>

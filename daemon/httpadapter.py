@@ -108,10 +108,10 @@ class HttpAdapter:
 
         # Handle request hook (call route handler and capture result)
         if req.hook:
-            try:
-                print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            except Exception:
-                pass
+            # try:
+            #     print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
+            # except Exception:
+            #     pass
             try:
                 # provide real headers and body to the route handler
                 result = req.hook(headers=req.headers, body=req.body)

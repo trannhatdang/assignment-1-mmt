@@ -69,7 +69,6 @@ def run_backend(ip, port, routes):
     connections. Each connection is handled in a separate thread. The backend accepts incoming
     connections and spawns a thread for each client.
 
-
     :param ip (str): IP address to bind the server.
     :param port (int): Port number to listen on.
     :param routes (dict): Dictionary of route handlers.

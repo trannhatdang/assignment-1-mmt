@@ -1,2 +1,4 @@
 admin:password
 deng:lmao
+khoa:1234
+lam:5678

@@ -16,20 +16,20 @@ app = WeApRous()
 # Keep peers in a dict to avoid duplicates. Key = ip:port
 active_peers = {}
 
-
 @app.route('/register', methods=['POST'])
 def register_peer(headers, body):
     try:
         peer_info = json.loads(body or '{}')
         ip = peer_info.get('ip')
         port = peer_info.get('port')
+        username = peer_info.get('username', 'unknown')
 
         if not ip or not port:
             return ({"status": "error", "message": "Missing IP or Port"}, '400 Bad Request')
 
         peer_id = f"{ip}:{port}"
         if peer_id not in active_peers:
-            active_peers[peer_id] = {"id": peer_id, "ip": ip, "port": port}
+            active_peers[peer_id] = {"id": peer_id, "ip": ip, "port": port, "username": username}
             print(f"Peer mới đăng ký: {peer_id}")
 
         return ({"status": "success", "message": f"Peer {peer_id} registered"}, '200 OK')
@@ -46,7 +46,6 @@ def get_peers(headers, body):
         return (peers, '200 OK')
     except Exception as e:
         return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
-
 
 def main():
     parser = argparse.ArgumentParser(prog='TrackerHTTP', description='Start HTTP tracker')

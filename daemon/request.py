@@ -73,10 +73,9 @@ class Request():
             first_line = lines[0]
             method, path, version = first_line.split()
 
-            if path == '/':
-                path = '/index.html'
-        except Exception:
-            return None, None
+        except Exception as e:
+            print(f"ERROR {e}")
+            return None, None, None
 
         return method, path, version
 
@@ -95,7 +94,7 @@ class Request():
 
         # Prepare the request line from the request header
         self.method, self.path, self.version = self.extract_request_line(request)
-        print("[Request] {} path {} version {}".format(self.method, self.path, self.version))
+        # print("[Request] {} path {} version {}".format(self.method, self.path, self.version))
 
         #
         # @bksysnet Preapring the webapp hook with WeApRous instance
@@ -105,7 +104,7 @@ class Request():
         #
         
         #uses the routes dictionary to get the corresponding hook
-        if(not routes == {}):
+        if routes:
             self.routes = routes
             self.hook = routes.get((self.method, self.path))
 
