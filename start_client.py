@@ -227,6 +227,13 @@ def broadcast(headers, body):
     except Exception as e:
         return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 
+"""
+TODO: 
+- Dicover and join a channel (sends request to tracker for the list of channels)
+- Send a message to channel.
+- Poll channels. (watch more new messages)
+"""
+
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
     parser = argparse.ArgumentParser()

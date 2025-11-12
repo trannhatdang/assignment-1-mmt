@@ -19,6 +19,14 @@ app = WeApRous()
 # Keep peers in a dict to avoid duplicates. Key = ip:port
 active_peers = {}
 
+"""
+TODO: Channel management
+
+- API to present a list of channels
+- Accept join requests from peers.
+- Present messages to peers' client browser (take in a time value and returns a list of messages newer than said time value)
+"""
+
 class Channel:
     def __init__(self, name: str):
         self.name = name
