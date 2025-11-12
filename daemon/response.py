@@ -198,6 +198,7 @@ class Response():
 
         :rtype tuple: (int, bytes) representing content length and content data.
         """
+        import os
 
         filepath = os.path.join(base_dir, path.lstrip('/'))
         # print("[Response] serving the object at location {}".format(filepath))
@@ -212,23 +213,22 @@ class Response():
         # This function now only loads the file content based on path.
         # --- END MODIFICATION ---
 
+        if os.path.isdir(filepath):
+            filepath = os.path.join(filepath, 'index.html')
+        
         try:
-            if 'images' in filepath or path.endswith('.png') or path.endswith('.jpg'):
-                file = open(filepath, "rb")
-                content = file.read()
+            if 'images' in filepath or path.endswith(('.png', '.jpg', '.jpeg')):
+                with open(filepath, "rb") as file:
+                    content = file.read()
             else:
-                # This will correctly open and read login.html, index.html, styles.css, etc.
-                file = open(filepath, "r")
-                content = file.read().encode('utf-8')
+                with open(filepath, "r", encoding="utf-8") as file:
+                    content = file.read().encode('utf-8')
         except FileNotFoundError:
             print(f"[Response] File not found: {filepath}")
-            raise Exception("File not found")
+            raise
         except Exception as e:
             print(f"[Response] Error processing file: {e}")
-            raise Exception("Something went wrong processing the file")
-
-        if(content == None):
-            raise Exception("Something went wrong processing the file")
+            raise
 
         return len(content), content
 

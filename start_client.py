@@ -242,6 +242,60 @@ def joinchannel(headers, body):
     except Exception as e:
         return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 
+@app.route('/sendchannel', methods=['POST'])
+def send_channel(headers, body):
+    try:
+        data = json.loads(body or '{}')
+        channel_name = data.get('channel')
+        message = data.get('message')
+
+        if not channel_name or message is None:
+            return ({"status": "error", "message": "Missing channel or message"}, '400 Bad Request')
+
+        # 1. (Client) Hỏi Tracker để lấy danh sách TẤT CẢ các kênh và thành viên
+        all_channels_info = send_http_request(tracker, 'GET', '/listchannels', {})
+        
+        target_peers = []
+        
+        # 2. Tìm kênh (channel) mà chúng ta muốn gửi
+        for c_info in all_channels_info:
+            if c_info.get('name') == channel_name:
+                peer_ids = c_info.get('peers', []) 
+                
+                for peer_id in peer_ids:
+                    try:
+                        addr = parse_address(peer_id)
+                        # Không gửi tin nhắn cho chính mình
+                        if addr != (ip, port):
+                            target_peers.append(addr)
+                    except Exception as e:
+                        print(f"Không thể parse địa chỉ peer: {peer_id}, lỗi: {e}")
+                
+                break # Đã tìm thấy kênh
+
+        if not target_peers:
+            print(f"Không tìm thấy peer nào (khác) trong kênh {channel_name} để gửi.")
+
+        # 3. (P2P) Gửi tin nhắn P2P trực tiếp đến tất cả peer trong kênh
+        sender_id = stringify_address((ip, port))
+        
+        for recv_addr in target_peers:
+            try:
+                # Gửi thẳng đến API /inbox của peer đó
+                send_http_request(recv_addr, 'POST', '/inbox', {
+                    'sender': sender_id,
+                    'message': message,
+                    'channel': channel_name
+                })
+            except Exception as e:
+                print(f"Gửi tin nhắn P2P đến {recv_addr} thất bại: {e}")
+
+        return ({"status": "success", "message": "Message sent to channel"}, '200 OK')
+    
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": f"Invalid JSON body: {e}"}, '400 Bad Request')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
