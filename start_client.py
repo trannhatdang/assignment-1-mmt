@@ -222,6 +222,27 @@ TODO:
 - Poll channels. (watch more new messages)
 """
 
+@app.route('/listchannels', methods=['GET'])
+def listchannels(headers, body):
+    return send_http_request(tracker, 'GET', '/listchannels', {})
+
+@app.route('/joinchannel', methods=['POST'])
+def joinchannel(headers, body):
+    try:
+        print(body)
+
+        addr = stringify_address((ip, port))
+        channel = json.loads(body)
+
+        send_http_request(tracker, 'POST', '/joinchannel', {'addr': addr, 'channel': channel})
+        
+        return ({"status": "success", "message": f"Message send successfully"}, '200 OK')
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": f"{e}"}, '400 Bad Request')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
+
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
     parser = argparse.ArgumentParser()

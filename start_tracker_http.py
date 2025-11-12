@@ -15,7 +15,7 @@ from datetime import datetime
 
 from daemon.weaprous import WeApRous
 from common import send_http_request, Address, parse_address, stringify_address
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 app = WeApRous()
 
@@ -35,7 +35,6 @@ Message = Tuple[Address, str]
 class Channel:
     def __init__(self, name: str):
         self.name = name
-        self.messages: List[Message] = [] # list of tuple: <ip:port> and <message>
         self.connected_peers: List[Address] = []
 
     def accept_peer(self, addr: Address):
@@ -61,6 +60,12 @@ class Channel:
                 )
             except:
                 pass
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            'name': self.name,
+            'peers': [stringify_address(a) for a in self.connected_peers]
+        }
 
     def __str__(self) -> str:
         return self.name
@@ -116,6 +121,8 @@ def join_channels(headers, body):
     try:
         global channels
 
+        print(body)
+
         data = json.loads(body)
         peeraddr = parse_address(data['addr'])
         channelname = data['channel']
@@ -134,7 +141,7 @@ def join_channels(headers, body):
 def poll_channel(headers, body):
     try:
         global channels
-        return ([c.name for c in channels], '200 OK')
+        return ([c.dump() for c in channels], '200 OK')
 
     except json.JSONDecodeError as e:
         return ({"status": "error", "message": str(e)}, '400 Bad Request')  

@@ -222,6 +222,50 @@
             });
     }
 
+    async function pollChannels() {
+        await sendRequest('/listchannels', 'GET').then((v) => {
+            console.log(v);
+
+            channellist = document.getElementById('channels')
+            channellist.textContent = "";
+
+            v.forEach((c) => {
+                let ch = document.createElement('p');
+                ch.textContent = c['name'] + " (Members:";
+                let joined = false;
+
+                c['peers'].forEach((p) => {
+                    if (p == CLIENT) {
+                        joined = true;
+                        ch.textContent += ' [You]';
+                    } else {
+                        let peername = 'Guest';
+            
+                        PEERLIST.forEach((v) => {
+                            if (v['id'] == p) peername = v['username'];
+                        });
+
+                        ch.textContent += ' ' + peername;
+                    }
+                })
+
+                ch.textContent += ')';
+
+                channellist.appendChild(ch);
+
+                if (!joined) {
+                    let button = document.createElement('button')
+                    button.textContent = "Join"
+                    button.type = "Button";
+                    button.addEventListener("click", () => {
+                        sendRequest('/joinchannel', 'POST', c['name'])
+                    });
+                    channellist.appendChild(button);
+                }
+            });
+        })
+    }
+
     async function main() {
         // Receive own username
         await sendRequest('/get', 'GET')
@@ -235,6 +279,7 @@
 
         startPolling(pollPeers, 5000, true);
         startPolling(pollMessages, 1000);
+        startPolling(pollChannels, 10000, true);
     }
 
     main()
