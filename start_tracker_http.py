@@ -10,8 +10,11 @@ Run with: python start_tracker_http.py --host 0.0.0.0 --port 8000
 import argparse
 import json
 import time
+
+from datetime import datetime
+
 from daemon.weaprous import WeApRous
-from fast_request import send_http_request
+from common import send_http_request, Address, parse_address, stringify_address
 from typing import Dict, Tuple, List
 
 app = WeApRous()
@@ -27,10 +30,46 @@ TODO: Channel management
 - Present messages to peers' client browser (take in a time value and returns a list of messages newer than said time value)
 """
 
+Message = Tuple[Address, str]
+
 class Channel:
     def __init__(self, name: str):
         self.name = name
-        self.messages: List[Tuple[str, str]] = [] # list of tuple: <ip:port> and <message>
+        self.messages: List[Message] = [] # list of tuple: <ip:port> and <message>
+        self.connected_peers: List[Address] = []
+
+    def accept_peer(self, addr: Address):
+        if addr in self.connected_peers:
+            print("Peer already in channel")
+            return
+
+        self.connected_peers.append(addr)
+
+    def accept_message(self, sender: Address, message: str):
+        if sender not in self.connected_peers:
+            print("Peer not in channel")
+            return
+        
+    def __broadcast(self, msg: Message):
+        for addr in self.connected_peers:
+            try:
+                send_http_request(
+                    addr,
+                    'POST',
+                    '/inbox',
+                    {"sender": msg[0], "channel": self.name, "message": msg[1]}
+                )
+            except:
+                pass
+
+    def __str__(self) -> str:
+        return self.name
+
+channels = [
+    Channel('general'),
+    Channel('IT'),
+    Channel('Music')
+]
 
 @app.route('/register', methods=['POST'])
 def register_peer(headers, body):
@@ -60,6 +99,45 @@ def get_peers(headers, body):
     try:
         peers = list(active_peers.values())
         return (peers, '200 OK')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
+@app.route('/listchannels', methods=['GET'])
+def get_channels(headers, body):
+    try:
+        global channels
+        ch = [str(c) for c in channels]
+        return (ch, '200 OK')
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
+@app.route('/joinchannel', methods=['POST'])
+def join_channels(headers, body):
+    try:
+        global channels
+
+        data = json.loads(body)
+        peeraddr = parse_address(data['addr'])
+        channelname = data['channel']
+
+        for c in channels:
+            if channelname == c.name:
+                c.accept_peer(peeraddr)
+                return ({"status": "success", "message": f"Peer {stringify_address(peeraddr)} accepted"}, '200 OK')
+            
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": str(e)}, '400 Bad Request')  
+    except Exception as e:
+        return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
+
+@app.route('/listchannels', methods=['GET'])
+def poll_channel(headers, body):
+    try:
+        global channels
+        return ([c.name for c in channels], '200 OK')
+
+    except json.JSONDecodeError as e:
+        return ({"status": "error", "message": str(e)}, '400 Bad Request')  
     except Exception as e:
         return ({"status": "error", "message": str(e)}, '500 Internal Server Error')
 

@@ -80,11 +80,15 @@
     let PEERLIST = [];
     const TRACKER = 'http://0.0.0.0:9998';
 
-    function displayMessage(username, msg) {
-        let displaylist = document.getElementById('direct messages');
+    function displayMessage(username, msg, channel = "") {
         let paragraph = document.createElement('p');
         paragraph.textContent = username + ": " + msg;
-        displaylist.appendChild(paragraph);
+
+        if (!channel) {
+            let displaylist = document.getElementById('direct messages');
+            displaylist.appendChild(paragraph);
+            return;
+        }
     }
 
     async function sendRequest(url, method = 'GET', data = null) {
@@ -186,9 +190,8 @@
             return;
         }
 
-        await sendRequest('/broadcast', 'POST', {
-            'message': msg
-        }).then((v) => {
+        await sendRequest('/broadcast', 'POST', msg)
+        .then((v) => {
             displayMessage("[You]", msg);
         }).catch((x) => 
             console.log("Failed to send message to peer")
@@ -205,22 +208,16 @@
 
     async function pollMessages() {
         await sendRequest('/pollinbox', 'GET')
-            .then((v) => {
-                let data = v['message'];
-                
-                if (data == '[]') {
-                    return
-                }
-                
-                let list = JSON.parse(data);
-
-                list.forEach((msgpair) => {
+            .then((list) => {
+                list.forEach((msg) => {
                     let peername = 'Guest';
+                    console.log(msg);
+
                     PEERLIST.forEach((v) => {
-                        if (v['id'] == msgpair[0]) peername = v['username']
+                        if (v['id'] == msg['sender']) peername = v['username']
                     });
 
-                    displayMessage(peername, msgpair[1])
+                    displayMessage(peername, msg['message'])
                 });
             });
     }
@@ -229,8 +226,8 @@
         // Receive own username
         await sendRequest('/get', 'GET')
             .then((v) => {
-                let selfname = v['message']['username']
-                CLIENT = v['message']['ip'] + ':' + v['message']['port'];
+                let selfname = v['username']
+                CLIENT = v['ip'] + ':' + v['port'];
                 document.getElementById('greet').textContent = "Hello " + selfname;
             });
 

@@ -6,6 +6,18 @@ from datetime import datetime
 
 Address = tuple[str, int]
 
+def parse_address(string: str) -> Address:
+    spl = list(string.strip().split(':'))
+    if len(spl) == 2:
+        ip = spl[0]
+        port = int(spl[1])
+        return (ip, port)
+    
+    raise Exception("Invalid address string")
+
+def stringify_address(a: Address) -> str:
+    return a[0] + ':' + str(a[1])
+
 def send_http_request(addr: Address, method, path, data: Any) -> Any:
     BUFSIZE = 4096
 

@@ -31,7 +31,7 @@ from typing import Dict, Tuple, Optional, Any, List
 from datetime import datetime
 
 from daemon.weaprous import WeApRous
-from fast_request import send_http_request
+from common import send_http_request, Address, parse_address, stringify_address
 
 PORT = 8000  # Default port
 app: WeApRous = WeApRous()
@@ -40,27 +40,12 @@ port = 9000
 username = 'guest'
 tracker = ('0.0.0.0', 9998)
 
-Address = tuple[str, int]
-
 PEERS_CONNECTED: List[Address] = [] # Connected peers
 
 """
 inbox contains messages: address, message
 """
-INBOX_QUEUE: List[Tuple[str, str]] = []
-
-def parse_address(string: str) -> Address:
-    spl = list(string.strip().split(':'))
-    if len(spl) == 2:
-        ip = spl[0]
-        port = int(spl[1])
-        return (ip, port)
-    
-    raise Exception("Invalid address string")
-
-def stringify_address(a: Address) -> str:
-    return a[0] + ':' + str(a[1])
-
+INBOX_QUEUE: List[Dict[str, str]] = []
 
 class Message:
     def __init__(self, sender: Address, receiver: Address, message: str, timecode: datetime = datetime.now()):
@@ -114,9 +99,14 @@ def peerinbox(headers, body):
         data = json.loads(body)
         sender = data['sender']
         message = data['message']
+        channel = data.get('channel', '')
 
         global INBOX_QUEUE
-        INBOX_QUEUE.append((sender, message))
+        INBOX_QUEUE.append({
+            'sender': sender,
+            'message': message,
+            'channel': channel
+        })
     
         return ({"status": "success", "message": "Message received"}, '200 OK')
     
@@ -128,12 +118,11 @@ def peerpoll(headers, body):
     try:
         global INBOX_QUEUE
 
-        newmsg = INBOX_QUEUE
-        msgstr = json.dumps(newmsg)
+        newmsg = list(INBOX_QUEUE)
 
         INBOX_QUEUE.clear()
 
-        return ({"status": "success", "message": msgstr}, '200 OK')
+        return (newmsg, '200 OK')
     
     except json.JSONDecodeError as e:
         return ({"status": "error", "message": f"{e}"}, '400 Bad Request')
@@ -206,15 +195,14 @@ def connectpeer(headers, body):
 
 @app.route('/get', methods=['GET'])
 def get(headers, body):
-    return ({"status": "success", "message": {'ip': ip, 'port': port, 'username': username}}, '200 OK')
+    return ({'ip': ip, 'port': port, 'username': username}, '200 OK')
 
 @app.route('/broadcast', methods=['POST'])
 def broadcast(headers, body):
     try:
-        data = json.loads(body)
+        message = body
         sender = stringify_address((ip, port))
-        message = data['message']
-
+        
         for recvaddr in PEERS_CONNECTED:
             send_http_request(recvaddr, 'POST', '/inbox', {
                 'sender': sender,
