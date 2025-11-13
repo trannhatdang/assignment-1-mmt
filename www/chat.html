@@ -47,9 +47,22 @@
     </div>
 </div>
 
+
 <div>
-    <h3>Direct Messages</h3>
-    <div id="direct messages">
+    <h3>Send to channel</h3>
+    <div>
+        <form id="sendToChannel" method="POST" action="/sendchannel">
+            <input name="channel name" type="text">
+            <input name="message" type="text">
+            <button type="button" onclick="sendToChannel()">Send Data</button>
+        </form>
+    </div>
+</div>
+
+
+<div>
+    <h3>Messages</h3>
+    <div id="messages">
 
     </div>
 </div>
@@ -84,11 +97,12 @@
         let paragraph = document.createElement('p');
         paragraph.textContent = username + ": " + msg;
 
-        if (!channel) {
-            let displaylist = document.getElementById('direct messages');
-            displaylist.appendChild(paragraph);
-            return;
+        if (channel) {
+            paragraph.textContent = '{' + channel + '}: ' + paragraph.textContent;
         }
+
+        let displaylist = document.getElementById('messages');
+        displaylist.appendChild(paragraph);
     }
 
     async function sendRequest(url, method = 'GET', data = null) {
@@ -180,6 +194,32 @@
         )
     }
 
+    async function sendToChannel() {
+        let form = document.getElementById('sendToChannel')
+        let data = new FormData(form);
+        let chname = data.get('channel name')
+        let msg = data.get('message')
+
+        if (chname.length == 0) {
+            console.log("Channel name must not be empty.")
+            return;
+        }
+
+        if (msg.length == 0) {
+            console.log("Message must not be empty.");
+            return;
+        }
+
+        await sendRequest('/sendchannel', 'POST', {
+            'channel': chname,
+            'message': msg
+        }).then((v) => {
+            displayMessage("[You]", msg, chname);
+        }).catch((x) =>
+            console.log("Failed to send message to peer")
+        )
+    }
+
     async function broadcast() {
         let form = document.getElementById('broadcast')
         let data = new FormData(form);
@@ -217,7 +257,7 @@
                         if (v['id'] == msg['sender']) peername = v['username']
                     });
 
-                    displayMessage(peername, msg['message'])
+                    displayMessage(peername, msg['message'], msg['channel'])
                 });
             });
     }
@@ -259,6 +299,7 @@
                     button.type = "Button";
                     button.addEventListener("click", () => {
                         sendRequest('/joinchannel', 'POST', c['name'])
+                        pollChannels()
                     });
                     channellist.appendChild(button);
                 }
