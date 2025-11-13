@@ -33,4 +33,15 @@ name into the left field, and the message into the right field.
 
 ---------
 
+Clients can still start without the tracker, but with a limitation of
+not knowing which client is online. Start chat without tracker with:
+
+```
+python start_chat.py --no-tracker
+```
+
+Copy the target peer address in the terminal to send direct messages.
+
+---------
+
 Use linux for best results (start_proxy will produce an error when using Windows)

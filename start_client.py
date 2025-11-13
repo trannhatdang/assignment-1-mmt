@@ -315,12 +315,15 @@ if __name__ == "__main__":
     t = list(args.tracker.split(':'))
     tracker = (t[0].strip(), int(t[1]))
 
-    res = send_http_request(tracker, "POST", "/register", {
-        "ip": ip,
-        "port": str(port),
-        "username": username
-    })
-    print(f"RES {res}")
+    try:
+        res = send_http_request(tracker, "POST", "/register", {
+            "ip": ip,
+            "port": str(port),
+            "username": username
+        })
+        print(f"RES {res}")
+    except:
+        print("Starting without tracker.")
 
     # Prepare and launch the RESTful application
     app.prepare_address(ip, port)

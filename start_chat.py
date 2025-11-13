@@ -33,6 +33,8 @@ def new_peer(username, port):
     return peer_process
 
 if __name__ == "__main__":
+    no_tracker = '--no-tracker' in sys.argv
+
     print("Starting P2P demo...")
 
     procs = []
@@ -44,8 +46,9 @@ if __name__ == "__main__":
     ]
 
     try:
-        tracker = start_tracker()
-        procs = [tracker]
+        if not no_tracker:
+            tracker = start_tracker()
+            procs += [tracker]
 
         procs += [new_peer(p[0], p[1]) for p in peernames]
 
