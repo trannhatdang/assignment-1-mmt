@@ -28,6 +28,9 @@ MAKE SURE THE OTHER CLIENT IS OPENED AS WELL.
 
 To broadcast message you must first connect to a peer.
 
+To send to channel, first join the channel, then copy the channel
+name into the left field, and the message into the right field.
+
 ---------
 
 Use linux for best results (start_proxy will produce an error when using Windows)
