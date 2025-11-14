@@ -24,9 +24,9 @@ HTTP requests. The application includes a login endpoint and a greeting endpoint
 and can be configured via command-line arguments.
 """
 
+import argparse
 import json
 import socket
-import argparse
 
 from daemon.weaprous import WeApRous
 
@@ -34,7 +34,8 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
-@app.route('/login', methods=['POST'])
+
+@app.route("/login", methods=["POST"])
 def login(headers="guest", body="anonymous"):
     """
     Handle user login via POST request.
@@ -45,9 +46,10 @@ def login(headers="guest", body="anonymous"):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body or login payload.
     """
-    print ("[SampleApp] Logging in {} to {}".format(headers, body))
+    print("[SampleApp] Logging in {} to {}".format(headers, body))
 
-@app.route('/hello', methods=['PUT'])
+
+@app.route("/hello", methods=["PUT"])
 def hello(headers, body):
     """
     Handle greeting via PUT request.
@@ -58,17 +60,22 @@ def hello(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body or message payload.
     """
-    print ("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+    print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
-    parser = argparse.ArgumentParser(prog='Backend', description='', epilog='Beckend daemon')
-    parser.add_argument('--server-ip', default='0.0.0.0')
-    parser.add_argument('--server-port', type=int, default=PORT)
- 
+    parser = argparse.ArgumentParser(
+        prog="Backend", description="", epilog="Beckend daemon"
+    )
+    parser.add_argument("--server-ip", default="localhost")
+    parser.add_argument("--server-port", type=int, default=PORT)
+
     args = parser.parse_args()
     ip = args.server_ip
     port = args.server_port
+
+    print(f"Visit http://localhost:{PORT}/login")
 
     # Prepare and launch the RESTful application
     app.prepare_address(ip, port)
